@@ -12,6 +12,7 @@ A Gradle plugin that automatically generates `.pyroscope.yaml` files mapping Jav
   - Maven POM SCM metadata
   - Convention-based mappings for popular libraries
   - Custom user-defined mappings
+- ☕ **Java stdlib support** - Automatically maps Java standard library packages to OpenJDK source
 - 💾 **Metadata caching** - Caches Maven metadata lookups for faster subsequent runs
 - 🎯 **Local project support** - Optionally includes local project source mappings
 - ⚡ **Incremental builds** - Supports Gradle's build cache and up-to-date checking
@@ -35,6 +36,7 @@ pyroscopeSourceMapper {
     outputFile = ".pyroscope.yaml"
     includeConfigs = listOf("runtimeClasspath")
     includeLocalProject = true
+    includeJavaStdlib = true  // Map Java stdlib to OpenJDK source
 }
 ```
 
@@ -43,25 +45,29 @@ pyroscopeSourceMapper {
 ```kotlin
 pyroscopeSourceMapper {
     outputFile = ".pyroscope.yaml"
-    
+
     // Configurations to analyze
     includeConfigs = listOf("runtimeClasspath", "compileClasspath")
-    
+
     // Configurations to skip (regex patterns supported)
     skipConfigs = listOf("testRuntimeClasspath", ".*test.*")
-    
+
     // Include local project source code
     includeLocalProject = true
-    
+
+    // Include Java standard library mappings to OpenJDK source
+    // Automatically detects Java version and maps to appropriate OpenJDK tag
+    includeJavaStdlib = true
+
     // Language (currently only "java" supported)
     language = "java"
-    
+
     // Pyroscope config version
     version = "v1"
-    
+
     // Use Maven Central POM files for SCM metadata
     useMavenCentralMetadata = true
-    
+
     // Custom mappings for dependencies not in Maven Central
     customMappings = mapOf(
         "com.example:custom-lib" to CustomSourceMapping(
@@ -126,6 +132,29 @@ The generated `.pyroscope.yaml` follows this structure:
 version: v1
 source_code:
   mappings:
+    # Local project source
+    - function_name:
+        - prefix: com/example/app
+      language: java
+      source:
+        local:
+          path: src/main/java
+
+    # Java standard library (automatically mapped to OpenJDK)
+    - function_name:
+        - prefix: java/lang
+        - prefix: java/util
+        - prefix: java/io
+        # ... (28 more Java stdlib packages)
+      language: java
+      source:
+        github:
+          owner: openjdk
+          repo: jdk
+          ref: jdk-21+0  # Automatically matched to your Java version
+          path: src/java.base/share/classes
+
+    # Third-party dependencies
     - function_name:
         - prefix: com/fasterxml/jackson/databind
         - prefix: com/fasterxml/jackson/databind/annotation
@@ -137,12 +166,6 @@ source_code:
           repo: jackson-databind
           ref: jackson-databind-2.15.3
           path: src/main/java
-    - function_name:
-        - prefix: com/example/app
-      language: java
-      source:
-        local:
-          path: src/main/java
 ```
 
 ## Configuration Options
@@ -153,6 +176,7 @@ source_code:
 | `includeConfigs` | List<String> | `["runtimeClasspath"]` | Gradle configurations to analyze |
 | `skipConfigs` | List<String> | `[]` | Configurations to skip (supports regex) |
 | `includeLocalProject` | Boolean | `true` | Include local project source mapping |
+| `includeJavaStdlib` | Boolean | `true` | Include Java stdlib mappings to OpenJDK source |
 | `language` | String | `"java"` | Programming language |
 | `version` | String | `"v1"` | Pyroscope config format version |
 | `useMavenCentralMetadata` | Boolean | `true` | Parse Maven POM files for SCM info |
@@ -162,6 +186,7 @@ source_code:
 
 The plugin has built-in convention mappings for popular libraries:
 
+- **Java Standard Library** - Automatically mapped to OpenJDK source (version-matched)
 - Spring Framework & Spring Boot
 - Google Guava
 - Jackson (databind, core)
@@ -170,6 +195,22 @@ The plugin has built-in convention mappings for popular libraries:
 - And many more...
 
 For other libraries, it will attempt to parse the Maven POM file's SCM section.
+
+### Java Standard Library Mapping
+
+When `includeJavaStdlib` is enabled (default), the plugin automatically maps common Java packages to the OpenJDK repository. The Java version is detected in the following order:
+
+1. Java toolchain configuration (if configured in your build)
+2. Target compatibility setting
+3. Runtime Java version (fallback)
+
+The detected version is mapped to the corresponding OpenJDK tag (e.g., Java 21 → `jdk-21+0`). This includes packages from:
+
+- **java.base**: `java.lang`, `java.util`, `java.io`, `java.nio`, `java.net`, `java.time`, etc.
+- **java.sql**: `java.sql`, `javax.sql`
+- **java.desktop**: `java.awt`, `javax.swing`, `javax.imageio`, etc.
+- **Other modules**: `java.rmi`, `javax.naming`, `javax.management`, `javax.xml`, etc.
+- **Internal APIs**: `jdk.internal.*`, `sun.*`, `com.sun.*`
 
 ## Troubleshooting
 

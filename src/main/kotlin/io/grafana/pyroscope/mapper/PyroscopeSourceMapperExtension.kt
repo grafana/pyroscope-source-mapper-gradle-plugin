@@ -22,6 +22,7 @@ open class PyroscopeSourceMapperExtension {
     var includeConfigs: List<String> = listOf("runtimeClasspath")
     var skipConfigs: List<String> = listOf()
     var includeLocalProject: Boolean = true
+    var includeJavaStdlib: Boolean = true
     var language: String = "java"
     var version: String = "v1"
     var useMavenCentralMetadata: Boolean = true
