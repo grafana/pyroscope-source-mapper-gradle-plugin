@@ -27,7 +27,8 @@ import javax.xml.parsers.DocumentBuilderFactory
 class SourceLocationResolver(
     private val project: Project,
     private val logger: Logger,
-    private val metadataCache: MetadataCache
+    private val metadataCache: MetadataCache,
+    private val githubSourceAnalyzer: GitHubSourceAnalyzer
 ) {
     /**
      * Resolve source location for a dependency
@@ -62,9 +63,16 @@ class SourceLocationResolver(
                     val githubSource = parseScmUrl(scmInfo, dependencyInfo.version)
                     if (githubSource != null) {
                         logger.debug("Resolved GitHub source for $key from POM")
-                        val source = SourceMapping.Source(github = githubSource)
-                        metadataCache.put(key, dependencyInfo.version, source)
-                        return source
+                        
+                        // Analyze the GitHub source to find the correct path
+                        val analyzedSource = githubSourceAnalyzer.analyzeAndResolvePath(githubSource, dependencyInfo)
+                        if (analyzedSource != null) {
+                            val source = SourceMapping.Source(github = analyzedSource)
+                            metadataCache.put(key, dependencyInfo.version, source)
+                            return source
+                        } else {
+                            logger.debug("Failed to analyze GitHub source for $key, skipping")
+                        }
                     }
                 }
             }
@@ -74,6 +82,22 @@ class SourceLocationResolver(
         val conventionSource = tryConventionBasedMapping(dependencyInfo)
         if (conventionSource != null) {
             logger.debug("Using convention-based mapping for $key")
+            
+            // Extract the GitHub source if present
+            val githubSource = conventionSource.github
+            if (githubSource != null) {
+                // Analyze to find the correct path
+                val analyzedSource = githubSourceAnalyzer.analyzeAndResolvePath(githubSource, dependencyInfo)
+                if (analyzedSource != null) {
+                    val source = SourceMapping.Source(github = analyzedSource)
+                    metadataCache.put(key, dependencyInfo.version, source)
+                    return source
+                } else {
+                    logger.debug("Failed to analyze convention-based GitHub source for $key, skipping")
+                    return null
+                }
+            }
+            
             metadataCache.put(key, dependencyInfo.version, conventionSource)
             return conventionSource
         }
@@ -111,28 +135,50 @@ class SourceLocationResolver(
             val doc: Document = docBuilder.parse(pomFile)
             doc.documentElement.normalize()
             
+            // Try to get SCM from current POM
             val scmNodes = doc.getElementsByTagName("scm")
-            if (scmNodes.length == 0) {
-                return null
+            if (scmNodes.length > 0) {
+                val scmElement = scmNodes.item(0) as Element
+                
+                val url = getElementText(scmElement, "url")
+                val connection = getElementText(scmElement, "connection")
+                val developerConnection = getElementText(scmElement, "developerConnection")
+                val tag = getElementText(scmElement, "tag")
+                
+                if (!url.isNullOrBlank() || !connection.isNullOrBlank() || !developerConnection.isNullOrBlank()) {
+                    return ScmInfo(
+                        url = url ?: connection ?: developerConnection ?: "",
+                        connection = connection,
+                        developerConnection = developerConnection,
+                        tag = tag
+                    )
+                }
             }
             
-            val scmElement = scmNodes.item(0) as Element
-            
-            val url = getElementText(scmElement, "url")
-            val connection = getElementText(scmElement, "connection")
-            val developerConnection = getElementText(scmElement, "developerConnection")
-            val tag = getElementText(scmElement, "tag")
-            
-            if (url.isNullOrBlank() && connection.isNullOrBlank() && developerConnection.isNullOrBlank()) {
-                return null
+            // If no SCM found, try parent POM
+            val parentNodes = doc.getElementsByTagName("parent")
+            if (parentNodes.length > 0) {
+                val parentElement = parentNodes.item(0) as Element
+                val parentGroupId = getElementText(parentElement, "groupId")
+                val parentArtifactId = getElementText(parentElement, "artifactId")
+                val parentVersion = getElementText(parentElement, "version")
+                
+                if (!parentGroupId.isNullOrBlank() && !parentArtifactId.isNullOrBlank() && !parentVersion.isNullOrBlank()) {
+                    val parentPomFile = findPomFile(DependencyInfo(
+                        groupId = parentGroupId,
+                        artifactId = parentArtifactId,
+                        version = parentVersion,
+                        packages = emptySet()
+                    ))
+                    
+                    if (parentPomFile != null) {
+                        logger.debug("Checking parent POM: $parentGroupId:$parentArtifactId:$parentVersion")
+                        return parsePomForScm(parentPomFile)
+                    }
+                }
             }
             
-            return ScmInfo(
-                url = url ?: connection ?: developerConnection ?: "",
-                connection = connection,
-                developerConnection = developerConnection,
-                tag = tag
-            )
+            return null
         } catch (e: Exception) {
             logger.debug("Failed to parse POM file ${pomFile.name}: ${e.message}")
             return null
@@ -233,19 +279,33 @@ class SourceLocationResolver(
             
             // Apache Commons
             "org.apache.commons:commons-lang3" to GitHubSource("apache", "commons-lang", "rel/commons-lang-${dependencyInfo.version}"),
+            "org.apache.commons:commons-collections4" to GitHubSource("apache", "commons-collections", "rel/commons-collections-${dependencyInfo.version}"),
+            "commons-codec:commons-codec" to GitHubSource("apache", "commons-codec", "rel/commons-codec-${dependencyInfo.version}"),
             
-            // Google Guava
+            // Google libraries
             "com.google.guava:guava" to GitHubSource("google", "guava", "v${dependencyInfo.version}"),
+            "com.google.protobuf:protobuf-" to GitHubSource("protocolbuffers", "protobuf", "v${dependencyInfo.version}"),
+            "com.google.code.gson:gson" to GitHubSource("google", "gson", "gson-parent-${dependencyInfo.version}"),
             
             // Jackson
             "com.fasterxml.jackson.core:jackson-databind" to GitHubSource("FasterXML", "jackson-databind", "jackson-databind-${dependencyInfo.version}"),
             "com.fasterxml.jackson.core:jackson-core" to GitHubSource("FasterXML", "jackson-core", "jackson-core-${dependencyInfo.version}"),
+            "com.fasterxml.jackson.dataformat:jackson-dataformat-" to GitHubSource("FasterXML", "jackson-dataformats-text", "jackson-dataformats-text-${dependencyInfo.version}"),
             
             // Logback
             "ch.qos.logback:logback-" to GitHubSource("qos-ch", "logback", "v_${dependencyInfo.version}"),
             
             // SLF4J
-            "org.slf4j:slf4j-" to GitHubSource("qos-ch", "slf4j", "v_${dependencyInfo.version}")
+            "org.slf4j:slf4j-" to GitHubSource("qos-ch", "slf4j", "v_${dependencyInfo.version}"),
+            
+            // Apache Log4j
+            "org.apache.logging.log4j:log4j-" to GitHubSource("apache", "logging-log4j2", "rel/${dependencyInfo.version}"),
+            
+            // Netty
+            "io.netty:netty-" to GitHubSource("netty", "netty", "netty-${dependencyInfo.version}"),
+            
+            // gRPC
+            "io.grpc:grpc-" to GitHubSource("grpc", "grpc-java", "v${dependencyInfo.version}")
         )
         
         val key = "${dependencyInfo.groupId}:${dependencyInfo.artifactId}"

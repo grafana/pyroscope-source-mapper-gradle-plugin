@@ -127,16 +127,18 @@ version: v1
 source_code:
   mappings:
     - function_name:
-        - prefix: [com/fasterxml/jackson]
+        - prefix: com/fasterxml/jackson/databind
+        - prefix: com/fasterxml/jackson/databind/annotation
+        - prefix: com/fasterxml/jackson/databind/cfg
       language: java
       source:
         github:
           owner: FasterXML
           repo: jackson-databind
           ref: jackson-databind-2.15.3
-          path: ""
+          path: src/main/java
     - function_name:
-        - prefix: [com/example/app]
+        - prefix: com/example/app
       language: java
       source:
         local:

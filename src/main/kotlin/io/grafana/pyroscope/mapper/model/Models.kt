@@ -36,7 +36,7 @@ data class SourceMapping(
     val source: Source
 ) {
     data class FunctionPrefix(
-        val prefix: List<String>
+        val prefix: String
     )
     
     data class Source(
