@@ -68,6 +68,10 @@ abstract class PyroscopeSourceMapperTask : DefaultTask() {
         // Initialize cache
         val metadataCache = MetadataCache(cacheDirValue.resolve("metadata-cache.bin"))
         
+        // Initialize GitHub source analyzer
+        val analyzerCacheDir = cacheDirValue.resolve("github-archives")
+        val githubSourceAnalyzer = io.grafana.pyroscope.mapper.resolver.GitHubSourceAnalyzer(logger, analyzerCacheDir)
+        
         // Resolve dependencies
         val dependencyResolver = DependencyResolver(project, logger)
         val dependencies = dependencyResolver.resolveDependencies(
@@ -78,7 +82,7 @@ abstract class PyroscopeSourceMapperTask : DefaultTask() {
         logger.info("Found ${dependencies.size} dependencies to map")
         
         // Resolve source locations
-        val sourceLocationResolver = SourceLocationResolver(project, logger, metadataCache)
+        val sourceLocationResolver = SourceLocationResolver(project, logger, metadataCache, githubSourceAnalyzer)
         val mappings = mutableListOf<SourceMapping>()
         
         // Add local project mapping if requested
@@ -112,7 +116,7 @@ abstract class PyroscopeSourceMapperTask : DefaultTask() {
             if (source != null) {
                 val mapping = SourceMapping(
                     functionName = dependency.packages.map { packagePath ->
-                        SourceMapping.FunctionPrefix(listOf(packagePath))
+                        SourceMapping.FunctionPrefix(packagePath)
                     },
                     language = language.get(),
                     source = source
@@ -178,7 +182,7 @@ abstract class PyroscopeSourceMapperTask : DefaultTask() {
         
         return SourceMapping(
             functionName = packages.map { packagePath ->
-                SourceMapping.FunctionPrefix(listOf(packagePath))
+                SourceMapping.FunctionPrefix(packagePath)
             },
             language = language.get(),
             source = SourceMapping.Source(

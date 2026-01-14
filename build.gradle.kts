@@ -14,6 +14,7 @@ repositories {
 dependencies {
     implementation(gradleApi())
     implementation("org.yaml:snakeyaml:2.2")
+    implementation("org.apache.commons:commons-compress:1.26.0")
     
     testImplementation("org.jetbrains.kotlin:kotlin-test")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
