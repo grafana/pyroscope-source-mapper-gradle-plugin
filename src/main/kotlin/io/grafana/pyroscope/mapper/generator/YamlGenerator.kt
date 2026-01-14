@@ -67,10 +67,11 @@ class YamlGenerator {
     private fun convertMapping(mapping: SourceMapping): Map<String, Any> {
         val result = mutableMapOf<String, Any>()
         
-        // function_name field
-        result["function_name"] = mapping.functionName.map { prefix ->
-            mapOf("prefix" to prefix.prefix)
-        }
+        // function_name field - consolidate all prefixes into a single block
+        val allPrefixes = mapping.functionName.flatMap { it.prefix }
+        result["function_name"] = listOf(
+            mapOf("prefix" to allPrefixes)
+        )
         
         // language field
         result["language"] = mapping.language
