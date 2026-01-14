@@ -152,6 +152,11 @@ class DependencyResolver(
             JarFile(jarFile).use { jar ->
                 jar.entries().asIterator().forEach { entry ->
                     if (entry.name.endsWith(".class") && !entry.isDirectory) {
+                        // Skip module-info.class and META-INF paths
+                        if (entry.name == "module-info.class" || entry.name.startsWith("META-INF/")) {
+                            return@forEach
+                        }
+                        
                         val packagePath = entry.name.substringBeforeLast('/')
                         if (packagePath.isNotEmpty()) {
                             // Convert path separator to package notation

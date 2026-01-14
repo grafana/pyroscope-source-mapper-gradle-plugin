@@ -11,7 +11,6 @@ source_code:
   - function_name:
     - prefix:
       - com/fasterxml/jackson/annotation
-      - module-info.class
     language: java
     source:
       github:
@@ -33,11 +32,7 @@ source_code:
       - com/fasterxml/jackson/core/sym
       - com/fasterxml/jackson/core/type
       - com/fasterxml/jackson/core/util
-      - META-INF/versions/9
       - com/fasterxml/jackson/core/io/doubleparser
-      - META-INF/versions/11/com/fasterxml/jackson/core/io/doubleparser
-      - META-INF/versions/17/com/fasterxml/jackson/core/io/doubleparser
-      - META-INF/versions/19/com/fasterxml/jackson/core/io/doubleparser
     language: java
     source:
       github:
@@ -69,7 +64,6 @@ source_code:
       - com/fasterxml/jackson/databind/type
       - com/fasterxml/jackson/databind/util
       - com/fasterxml/jackson/databind/util/internal
-      - META-INF/versions/9
     language: java
     source:
       github:
@@ -105,7 +99,6 @@ source_code:
       - ch/qos/logback/classic/spi
       - ch/qos/logback/classic/turbo
       - ch/qos/logback/classic/util
-      - module-info.class
     language: java
     source:
       github:
@@ -155,7 +148,6 @@ source_code:
       - ch/qos/logback/core/subst
       - ch/qos/logback/core/testUtil
       - ch/qos/logback/core/util
-      - module-info.class
     language: java
     source:
       github:
@@ -168,7 +160,6 @@ source_code:
       - org/slf4j/event
       - org/slf4j/helpers
       - org/slf4j/spi
-      - META-INF/versions/9
     language: java
     source:
       github:
@@ -546,7 +537,6 @@ source_code:
       - org/springframework/cglib/beans
       - org/springframework/objenesis
       - org/springframework/lang
-      - META-INF/versions/21/org/springframework/core/task
       - org/springframework/javapoet
       - org/springframework/objenesis/instantiator
       - org/springframework/objenesis/instantiator/android
@@ -620,7 +610,6 @@ source_code:
       - jakarta/annotation
       - jakarta/annotation/security
       - jakarta/annotation/sql
-      - module-info.class
     language: java
     source:
       github:
