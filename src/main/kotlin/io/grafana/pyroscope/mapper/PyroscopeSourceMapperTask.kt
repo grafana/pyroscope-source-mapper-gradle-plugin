@@ -42,7 +42,10 @@ abstract class PyroscopeSourceMapperTask : DefaultTask() {
     
     @get:Input
     abstract val includeLocalProject: Property<Boolean>
-    
+
+    @get:Input
+    abstract val includeJavaStdlib: Property<Boolean>
+
     @get:Input
     abstract val language: Property<String>
     
@@ -93,7 +96,14 @@ abstract class PyroscopeSourceMapperTask : DefaultTask() {
                 logger.info("Added local project mapping")
             }
         }
-        
+
+        // Add Java stdlib mapping if requested
+        if (includeJavaStdlib.get()) {
+            val stdlibMapping = createJavaStdlibMapping()
+            mappings.add(stdlibMapping)
+            logger.info("Added Java stdlib mapping to OpenJDK source")
+        }
+
         // Process each dependency
         var resolvedCount = 0
         dependencies.forEach { dependency ->
@@ -189,5 +199,129 @@ abstract class PyroscopeSourceMapperTask : DefaultTask() {
                 local = LocalSource(localPath)
             )
         )
+    }
+
+    /**
+     * Create mapping for Java standard library packages to OpenJDK source
+     */
+    private fun createJavaStdlibMapping(): SourceMapping {
+        // Common Java stdlib package prefixes
+        // Note: This covers the most commonly used packages from various Java modules
+        // Users can override these with custom mappings if needed for specific versions
+        val stdlibPackages = listOf(
+            // java.base module - core Java packages
+            "java/lang",
+            "java/util",
+            "java/io",
+            "java/nio",
+            "java/net",
+            "java/math",
+            "java/time",
+            "java/security",
+            "java/text",
+            "javax/crypto",
+            "javax/net",
+            "javax/security",
+            // java.sql module
+            "java/sql",
+            "javax/sql",
+            // java.desktop module
+            "java/awt",
+            "java/beans",
+            "javax/swing",
+            "javax/imageio",
+            "javax/print",
+            "javax/sound",
+            "javax/accessibility",
+            // java.rmi module
+            "java/rmi",
+            // java.naming module
+            "javax/naming",
+            // java.management module
+            "javax/management",
+            // java.xml module
+            "javax/xml",
+            // java.transaction.xa module
+            "javax/transaction",
+            // JDK internal packages
+            "jdk/internal",
+            // Sun proprietary packages (internal APIs)
+            "sun/misc",
+            "sun/nio",
+            "sun/reflect",
+            "sun/security",
+            "sun/util",
+            "sun/net",
+            "sun/font",
+            "sun/awt",
+            "sun/swing",
+            "sun/print",
+            "sun/text",
+            // com.sun packages (internal APIs)
+            "com/sun",
+            // Additional javax packages
+            "javax/annotation",  // java.compiler module
+            "javax/tools",       // java.compiler module
+            "javax/script"       // java.scripting module
+        )
+
+        // Detect Java version and map to appropriate OpenJDK tag
+        val javaVersion = getJavaVersion()
+        val jdkRef = "jdk-$javaVersion+0"
+
+        logger.debug("Using OpenJDK tag: $jdkRef for Java version $javaVersion")
+
+        return SourceMapping(
+            functionName = stdlibPackages.map { packagePath ->
+                SourceMapping.FunctionPrefix(packagePath)
+            },
+            language = language.get(),
+            source = SourceMapping.Source(
+                github = GitHubSource(
+                    owner = "openjdk",
+                    repo = "jdk",
+                    ref = jdkRef,
+                    path = "src/java.base/share/classes"
+                )
+            )
+        )
+    }
+
+    /**
+     * Get the Java version used by the project
+     */
+    private fun getJavaVersion(): String {
+        // Try to get from Java toolchain if configured
+        val javaExtension = project.extensions.findByName("java") as? org.gradle.api.plugins.JavaPluginExtension
+        if (javaExtension != null) {
+            try {
+                // Try to get toolchain version
+                val toolchain = javaExtension.toolchain
+                val languageVersion = toolchain.languageVersion.orNull
+                if (languageVersion != null) {
+                    val version = languageVersion.asInt()
+                    logger.debug("Detected Java version from toolchain: $version")
+                    return version.toString()
+                }
+            } catch (e: Exception) {
+                logger.debug("Could not detect Java version from toolchain: ${e.message}")
+            }
+
+            // Fall back to target compatibility
+            try {
+                val targetCompatibility = javaExtension.targetCompatibility
+                val version = targetCompatibility.majorVersion
+                logger.debug("Detected Java version from targetCompatibility: $version")
+                return version
+            } catch (e: Exception) {
+                logger.debug("Could not detect Java version from targetCompatibility: ${e.message}")
+            }
+        }
+
+        // Fall back to runtime Java version
+        val runtimeVersion = System.getProperty("java.version")
+        val majorVersion = runtimeVersion.split(".").first().toIntOrNull() ?: 17
+        logger.debug("Using runtime Java version: $majorVersion")
+        return majorVersion.toString()
     }
 }

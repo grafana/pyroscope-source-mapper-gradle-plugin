@@ -33,6 +33,7 @@ class PyroscopeSourceMapperPlugin : Plugin<Project> {
             includeConfigs.set(extension.includeConfigs)
             skipConfigs.set(extension.skipConfigs)
             includeLocalProject.set(extension.includeLocalProject)
+            includeJavaStdlib.set(extension.includeJavaStdlib)
             language.set(extension.language)
             version.set(extension.version)
             useMavenCentralMetadata.set(extension.useMavenCentralMetadata)

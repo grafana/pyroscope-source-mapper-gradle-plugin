@@ -8,6 +8,56 @@ source_code:
       local:
         path: src/main/java
   - function_name:
+    - prefix: java/lang
+    - prefix: java/util
+    - prefix: java/io
+    - prefix: java/nio
+    - prefix: java/net
+    - prefix: java/math
+    - prefix: java/time
+    - prefix: java/security
+    - prefix: java/text
+    - prefix: javax/crypto
+    - prefix: javax/net
+    - prefix: javax/security
+    - prefix: java/sql
+    - prefix: javax/sql
+    - prefix: java/awt
+    - prefix: java/beans
+    - prefix: javax/swing
+    - prefix: javax/imageio
+    - prefix: javax/print
+    - prefix: javax/sound
+    - prefix: javax/accessibility
+    - prefix: java/rmi
+    - prefix: javax/naming
+    - prefix: javax/management
+    - prefix: javax/xml
+    - prefix: javax/transaction
+    - prefix: jdk/internal
+    - prefix: sun/misc
+    - prefix: sun/nio
+    - prefix: sun/reflect
+    - prefix: sun/security
+    - prefix: sun/util
+    - prefix: sun/net
+    - prefix: sun/font
+    - prefix: sun/awt
+    - prefix: sun/swing
+    - prefix: sun/print
+    - prefix: sun/text
+    - prefix: com/sun
+    - prefix: javax/annotation
+    - prefix: javax/tools
+    - prefix: javax/script
+    language: java
+    source:
+      github:
+        owner: openjdk
+        repo: jdk
+        ref: jdk-21+0
+        path: src/java.base/share/classes
+  - function_name:
     - prefix: com/fasterxml/jackson/datatype/jsr310
     - prefix: com/fasterxml/jackson/datatype/jsr310/deser
     - prefix: com/fasterxml/jackson/datatype/jsr310/deser/key
