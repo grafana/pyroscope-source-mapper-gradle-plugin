@@ -1,5 +1,7 @@
 # Pyroscope Source Mapper Gradle Plugin
 
+> ⚠️ **Experimental**: This project is an experiment and is not officially supported. Use at your own risk.
+
 A Gradle plugin that automatically generates `.pyroscope.yaml` files mapping Java dependencies to their source code repositories. This enables Pyroscope to provide source-level profiling information for your entire dependency tree.
 
 ## Features
@@ -233,7 +235,7 @@ See [LOCAL_DEVELOPMENT.md](LOCAL_DEVELOPMENT.md) for more options and detailed i
 
 ## License
 
-[Add your license here]
+Apache License 2.0 - See [LICENSE](LICENSE) for details.
 
 ## Contributing
 
