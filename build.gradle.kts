@@ -13,7 +13,7 @@ repositories {
 
 dependencies {
     implementation(gradleApi())
-    implementation("org.yaml:snakeyaml:2.2")
+    implementation("org.yaml:snakeyaml:2.6")
     implementation("org.apache.commons:commons-compress:1.26.0")
     
     testImplementation("org.jetbrains.kotlin:kotlin-test")
