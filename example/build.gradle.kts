@@ -11,7 +11,7 @@ repositories {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web:3.2.0")
+    implementation("org.springframework.boot:spring-boot-starter-web:3.5.16")
     implementation("com.fasterxml.jackson.core:jackson-databind:2.18.9")
     implementation("com.google.guava:guava:32.1.3-jre")
     implementation("ch.qos.logback:logback-classic:1.4.14")
